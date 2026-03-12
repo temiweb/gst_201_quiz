@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GST 201 – Quiz Mode</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f0a1a;--card:#1a1127;--accent:#f59e0b;--accent2:#a78bfa;--correct:#10b981;--wrong:#ef4444;--text:#e2e8f0;--muted:#64748b;--border:#2d1f3d;--warn:#f59e0b}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+.noise{position:fixed;inset:0;pointer-events:none;opacity:.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.app{max-width:560px;margin:0 auto;padding:16px 16px 100px}
+header{text-align:center;padding:24px 0 16px}
+header h1{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+header p{font-size:20px;font-weight:700;line-height:1.3}
+.stats-bar{display:flex;gap:6px;margin-bottom:14px}
+.stat{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center}
+.stat .num{font-family:'Space Mono',monospace;font-size:18px;font-weight:700}
+.stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
+.stat.score .num{color:var(--accent)}
+.stat.streak .num{color:var(--accent2)}
+.stat.timer .num{color:var(--warn)}
+.progress-wrap{background:var(--card);border-radius:99px;height:5px;margin-bottom:18px;overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease}
+.q-counter{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:1px;display:flex;justify-content:space-between;align-items:center}
+.q-counter .actions button{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px;transition:color .2s}
+.q-counter .actions button:hover{color:var(--accent)}
+.q-counter .actions button.bookmarked{color:var(--warn)}
+.question-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px 18px;margin-bottom:14px;animation:fadeUp .3s ease}
+.question-card h2{font-size:16px;font-weight:500;line-height:1.55}
+.topic-tag{display:inline-block;font-size:10px;font-family:'Space Mono',monospace;color:var(--accent2);background:rgba(167,139,250,.1);padding:2px 8px;border-radius:99px;margin-bottom:10px;letter-spacing:.5px}
+.options{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.opt-btn{background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;text-align:left;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:10px;line-height:1.45}
+.opt-btn:active{transform:scale(.98)}
+.opt-btn:hover:not(.disabled){border-color:var(--accent);background:rgba(245,158,11,.04)}
+.opt-btn .key{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;min-width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:5px;background:var(--border);flex-shrink:0;margin-top:1px}
+.opt-btn.selected-correct{border-color:var(--correct);background:rgba(16,185,129,.08)}
+.opt-btn.selected-correct .key{background:var(--correct);color:#fff}
+.opt-btn.selected-wrong{border-color:var(--wrong);background:rgba(239,68,68,.08)}
+.opt-btn.selected-wrong .key{background:var(--wrong);color:#fff}
+.opt-btn.show-correct{border-color:var(--correct);background:rgba(16,185,129,.05)}
+.opt-btn.show-correct .key{background:var(--correct);color:#fff}
+.opt-btn.disabled{cursor:default;opacity:.6}
+.opt-btn.disabled.selected-correct,.opt-btn.disabled.selected-wrong,.opt-btn.disabled.show-correct{opacity:1}
+.explanation{background:rgba(245,158,11,.05);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.6;color:#cbd5e1;animation:fadeUp .25s ease}
+.explanation strong{color:var(--accent);font-weight:600}
+.nav-row{display:flex;gap:8px;margin-top:8px}
+.nav-btn{flex:1;padding:13px;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:transform .15s;letter-spacing:.3px}
+.nav-btn:active{transform:scale(.97)}
+.nav-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0f1a}
+.nav-btn.secondary{background:var(--card);color:var(--muted);border:1px solid var(--border)}
+.nav-btn.secondary:hover{color:var(--text);border-color:var(--muted)}
+.skip-btn{width:100%;padding:13px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;margin-top:8px}
+.skip-btn:hover{border-color:var(--muted);color:var(--text)}
+.setup{animation:fadeUp .3s ease}
+.setup h2{font-size:18px;font-weight:700;margin-bottom:16px}
+.setup-section{margin-bottom:20px}
+.setup-section label{display:block;font-size:11px;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.size-options{display:flex;gap:6px;flex-wrap:wrap}
+.size-btn,.chip,.pill{padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s}
+.size-btn{font-size:14px;font-weight:600}
+.chip{font-size:11px;font-weight:500;padding:6px 10px}
+.pill{font-size:13px;font-weight:600}
+.size-btn.active,.pill.active{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.06)}
+.chip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(167,139,250,.08)}
+.topic-chips,.mode-pills{display:flex;flex-wrap:wrap;gap:6px}
+.start-btn{width:100%;padding:15px;border:none;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0f1a;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:700;cursor:pointer;margin-top:8px}
+.start-btn:active{transform:scale(.98)}
+.q-total{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);text-align:center;margin:12px 0 4px}
+.resume-banner{background:var(--card);border:1.5px solid var(--accent);border-radius:12px;padding:16px;margin-bottom:20px;text-align:center;animation:fadeUp .3s ease}
+.resume-banner p{font-size:14px;margin-bottom:10px;color:var(--text)}
+.resume-banner .nav-btn{margin:4px}
+.results{text-align:center;padding:32px 0;animation:fadeUp .35s ease}
+.results .big{font-size:56px;font-weight:700;font-family:'Space Mono',monospace;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.results .grade{font-size:15px;font-weight:700;margin-top:12px;padding:8px 20px;border-radius:99px;display:inline-block}
+.grade-a{background:rgba(16,185,129,.15);color:var(--correct)}
+.grade-b{background:rgba(245,158,11,.15);color:var(--accent)}
+.grade-c{background:rgba(167,139,250,.15);color:var(--accent2)}
+.grade-f{background:rgba(239,68,68,.15);color:var(--wrong)}
+.results p{color:var(--muted);margin-top:6px;font-size:14px;line-height:1.6}
+.result-details{text-align:left;margin-top:20px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.result-details h3{font-size:12px;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.topic-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px}
+.result-btns{display:flex;flex-direction:column;gap:8px;margin-top:20px}
+.result-btns .nav-btn{padding:14px;width:100%}
+.hidden{display:none!important}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:380px){.app{padding:10px 10px 80px}.question-card{padding:16px 14px}.opt-btn{padding:10px 12px;font-size:13px}.stat .num{font-size:16px}}
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="app">
+<header>
+<h1>GST 201</h1>
+<p>Entrepreneurship &amp; Innovation</p>
+</header>
+<div id="setupArea"></div>
+<div id="quizHeader" class="hidden">
+  <div class="stats-bar">
+    <div class="stat score"><div class="num" id="scoreNum">0%</div><div class="lbl">Score</div></div>
+    <div class="stat streak"><div class="num" id="streakNum">0</div><div class="lbl">Streak</div></div>
+    <div class="stat timer"><div class="num" id="timerNum">0:00</div><div class="lbl">Time</div></div>
+    <div class="stat"><div class="num" id="doneNum">0</div><div class="lbl">Done</div></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-fill" id="progFill"></div></div>
+</div>
+<div id="quizArea" class="hidden"></div>
+<div id="resultsArea" class="hidden"></div>
+</div>
+<script>
+const Q=[
+// === DEFINITIONS & CONCEPTS ===
+{t:"Definitions & Concepts",q:"The word 'Entrepreneur' stems from the French verb 'Entreprendre' which means:",o:["To create","To profit","Between-taker or go-between","To manage"],a:2,e:"Entreprendre means 'to undertake' — the entrepreneur is a go-between or intermediary who takes initiative."},
+{t:"Definitions & Concepts",q:"According to the Oxford Dictionary, an entrepreneur is:",o:["A government official","A person who undertakes an enterprise with chances of profit or loss","A skilled technician","A corporate manager"],a:1,e:"The Oxford Dictionary defines an entrepreneur as someone who undertakes an enterprise risking profit or loss."},
+{t:"Definitions & Concepts",q:"According to the New Encyclopaedia Britannica, an entrepreneur is:",o:["A factory worker","Someone who avoids all risks","An individual who bears the risk of operating business under uncertainty","A government regulator"],a:2,e:"The Britannica emphasizes risk-bearing in the face of uncertainty about future conditions."},
+{t:"Definitions & Concepts",q:"The standard (new) definition of entrepreneurship involves four aspects. Which is NOT one of them?",o:["The creation process","Devotion of time and efforts","Government regulation","Assumption of risks"],a:2,e:"The four aspects are: creation process, time/effort devotion, risk assumption, and rewards (independence, satisfaction, money)."},
+{t:"Definitions & Concepts",q:"An entrepreneur is a _____ while entrepreneurship is a _____.",o:["Process, person","Person, process","Product, service","Risk, reward"],a:1,e:"An entrepreneur is the person; entrepreneurship is the process they undertake."},
+{t:"Definitions & Concepts",q:"Enterprise, according to the Oxford Dictionary, means:",o:["A small shop","A bold undertaking","A government agency","A type of investment"],a:1,e:"Enterprise = bold undertaking — it implies courage and initiative."},
+{t:"Definitions & Concepts",q:"A 21st century entrepreneur is best described as:",o:["A traditional farmer","A customer-focused innovator who uses e-knowledge","Someone who avoids technology","A government employee"],a:1,e:"The modern entrepreneur uses digital knowledge, thinks globally, and focuses on customer needs."},
+{t:"Definitions & Concepts",q:"Entrepreneurship connotes:",o:["A one-time event","Action rather than a static event","Government policy","Academic theory only"],a:1,e:"Entrepreneurship is about taking action — analyzing opportunities, launching, growing, and financing ventures."},
+{t:"Definitions & Concepts",q:"The rewards of entrepreneurship include all EXCEPT:",o:["Monetary satisfaction","Personal satisfaction","Independence","Guaranteed job security"],a:3,e:"Entrepreneurship offers independence and satisfaction but never guarantees security — risk is inherent."},
+{t:"Definitions & Concepts",q:"Which relationship is correct?",o:["Entrepreneur = Process, Enterprise = Person","Entrepreneur = Person, Entrepreneurship = Process, Enterprise = Object","Enterprise = Process, Entrepreneur = Object","Entrepreneurship = Person, Enterprise = Process"],a:1,e:"Entrepreneur (person) → Entrepreneurship (process) → Enterprise (object/outcome)."},
+
+// === FUNCTIONS OF ENTREPRENEURS ===
+{t:"Functions of Entrepreneurs",q:"Which is a function of an entrepreneur?",o:["Avoiding all business risks","Selection of business opportunities","Waiting for government directives","Copying competitors exactly"],a:1,e:"Entrepreneurs identify and select profitable business opportunities from unsatisfied needs."},
+{t:"Functions of Entrepreneurs",q:"Combining factors of production means:",o:["Using only capital","Bringing together land, labour, and capital to produce goods/services","Eliminating labour","Outsourcing everything"],a:1,e:"Entrepreneurs gather scattered resources (land, labour, capital) to produce goods and services."},
+{t:"Functions of Entrepreneurs",q:"Establishment of a business enterprise involves:",o:["Only getting a loan","Determining mission, vision, creating business name, and registration","Just having an idea","Hiring employees only"],a:1,e:"Establishing an enterprise requires formalizing the business through mission, vision, naming, and registration."},
+{t:"Functions of Entrepreneurs",q:"Management of a business enterprise includes:",o:["Planning, organizing, and coordinating","Only counting money","Avoiding all decisions","Working alone without staff"],a:0,e:"Management involves day-to-day managerial activities like planning, organizing, and coordinating."},
+{t:"Functions of Entrepreneurs",q:"Decision making in business involves:",o:["Avoiding choices","Choosing and adopting alternative courses of action","Following others blindly","Delegating everything"],a:1,e:"Entrepreneurs make decisions under uncertainty, choosing the best course of action despite risks."},
+{t:"Functions of Entrepreneurs",q:"Business opportunities are exploited by:",o:["Ignoring customer needs","Identifying unsatisfied needs and gathering resources to meet them","Waiting for the market to change","Copying foreign products only"],a:1,e:"Opportunities come from identifying unmet needs and assembling the resources to satisfy them."},
+
+// === HOW TO BECOME AN ENTREPRENEUR ===
+{t:"Becoming an Entrepreneur",q:"Vision, in the context of entrepreneurship, is:",o:["A short-term goal","An idea of what one wants to achieve in the long-term future","A financial statement","A marketing plan"],a:1,e:"A vision describes long-term aspirations — what the entrepreneur wants to achieve or become."},
+{t:"Becoming an Entrepreneur",q:"Goals, unlike vision, should be:",o:["Vague and open-ended","Specific, measurable, and time-bound","Unrealistic","Permanent and unchangeable"],a:1,e:"Goals are SMART — specific, measurable, and time-bound — while vision is broader and long-term."},
+{t:"Becoming an Entrepreneur",q:"Self-motivation in entrepreneurship means:",o:["Being pushed by others","An internal drive that spurs action to achieve goals","External pressure from investors","Government incentives"],a:1,e:"Self-motivation is an internal interest that pushes an individual into action voluntarily."},
+{t:"Becoming an Entrepreneur",q:"Sacrifice in entrepreneurship means:",o:["Never investing anything","Giving up something now in anticipation of future returns","Taking shortcuts","Avoiding all spending"],a:1,e:"Entrepreneurs sacrifice time and resources now, expecting future profits and success."},
+{t:"Becoming an Entrepreneur",q:"Emotional stability for an entrepreneur means:",o:["Never feeling emotions","Control of sentiments for achieving predetermined goals","Always being happy","Ignoring business problems"],a:2,e:"Emotional stability means not being deterred by losses or overexcited by profits — maintaining focus."},
+{t:"Becoming an Entrepreneur",q:"Decisiveness in entrepreneurship is:",o:["Never making decisions","The ability to react quickly and rightly on matters of concern","Always seeking approval","Avoiding all risks"],a:1,e:"Decisive entrepreneurs make timely decisions — it's better to decide and fail than to fail to decide."},
+{t:"Becoming an Entrepreneur",q:"Steadfastness differs from firmness because:",o:["It means being rigid","Steadfastness is consistency in firmness over time","They are the same thing","Steadfastness means changing decisions often"],a:1,e:"Firmness is sticking to decisions; steadfastness is being consistently firm over time."},
+{t:"Becoming an Entrepreneur",q:"Human relations skill is important because:",o:["Entrepreneurs work completely alone","Entrepreneurs need to relate with partners, workers, and customers","It helps avoid all people","It's only about sales"],a:1,e:"No one can single-handedly run a business — relating well with all stakeholders is essential."},
+
+// === PERSONAL CHARACTERISTICS ===
+{t:"Entrepreneurial Traits",q:"Which is an important entrepreneurial trait?",o:["Laziness","Self-confidence","Avoiding all risks","Dependence on others"],a:1,e:"Self-confidence — believing in yourself and your ability to achieve goals — is fundamental."},
+{t:"Entrepreneurial Traits",q:"'Builds for the Future' means entrepreneurs understand that:",o:["Profits come immediately","It may take several years to build business income","Business doesn't require patience","Short-term thinking is best"],a:1,e:"Building for the future means accepting that reasonable income takes time to develop."},
+{t:"Entrepreneurial Traits",q:"Being 'profit-oriented' means:",o:["Greed at all costs","Recognizing that the business comes first and managing profits wisely","Ignoring customers","Only personal spending"],a:1,e:"Profit-oriented entrepreneurs prioritize the business, then decide how to use profits."},
+{t:"Entrepreneurial Traits",q:"Persistence in entrepreneurship means:",o:["Giving up at the first problem","Continuing to solve problems despite difficulties","Never changing strategy","Avoiding challenges"],a:1,e:"All businesses face problems — persistent entrepreneurs keep solving them."},
+{t:"Entrepreneurial Traits",q:"'Copes with Failure' means:",o:["Never failing","Recognizing failures, learning from them, and seeking new opportunities","Hiding failures","Blaming others"],a:1,e:"Coping with failure involves learning from setbacks and using them as stepping stones."},
+{t:"Entrepreneurial Traits",q:"Risk-taking in entrepreneurship involves:",o:["Gambling blindly","Taking measured or calculated risks","Avoiding all risk","Only safe investments"],a:1,e:"Entrepreneurs take calculated risks — assessing costs, gains, and chances of success."},
+{t:"Entrepreneurial Traits",q:"'Responds to Feedback' means entrepreneurs:",o:["Ignore all criticism","Track performance and use advice from others","Never change","Avoid bankers and advisers"],a:1,e:"Successful entrepreneurs seek feedback and use it to improve performance."},
+{t:"Entrepreneurial Traits",q:"'Sets Own Standards' means:",o:["Following industry minimum","Setting personal performance standards and working to exceed them each year","Having no targets","Copying competitors' standards"],a:1,e:"Entrepreneurs set their own benchmarks — income, quality, sales — and strive to improve yearly."},
+{t:"Entrepreneurial Traits",q:"Integrity as an entrepreneurial trait means:",o:["Deceiving customers","Honesty, fair dealing, and keeping promises","Maximizing profit by any means","Avoiding all commitments"],a:1,e:"Reliability and honesty are essential — customers and partners must trust the entrepreneur."},
+
+// === CONSTRAINTS/PROBLEMS ===
+{t:"Constraints of Entrepreneurship",q:"Financial limitations for small enterprises include all EXCEPT:",o:["Difficulty balancing cash in and cash out","Trouble using credit as a selling tool","Unlimited access to bank loans","Difficulty staying afloat waiting for market acceptance"],a:2,e:"Small businesses struggle with financing — unlimited loan access is NOT their reality."},
+{t:"Constraints of Entrepreneurship",q:"Staffing problems in small businesses include:",o:["Paying the highest salaries","Inability to attract top talent due to limited pay and status","Having too many qualified applicants","No need for employees"],a:1,e:"Small companies can't offer the salaries and prestige of big firms, making recruitment harder."},
+{t:"Constraints of Entrepreneurship",q:"'Higher direct costs' for small enterprises means:",o:["They buy raw materials cheaper than large companies","Per unit production costs are usually higher due to inability to achieve economies of scale","Their overhead is always higher","They have no costs"],a:1,e:"Small businesses can't buy in bulk or achieve economies of scale, raising per-unit costs."},
+{t:"Constraints of Entrepreneurship",q:"'Lack of credibility' means small businesses:",o:["Are always trusted","Must struggle to prove themselves with each new product","Have strong brand recognition","Are preferred by consumers"],a:1,e:"Unlike established brands, small businesses lack name recognition and must earn trust repeatedly."},
+{t:"Constraints of Entrepreneurship",q:"Management incompetence refers to:",o:["Having too many skilled managers","Lacking skills in financial records, inventory control, etc.","Being over-qualified","Having perfect management"],a:1,e:"When entrepreneurs lack basic management skills, their ventures suffer."},
+{t:"Constraints of Entrepreneurship",q:"Which is NOT a constraint of entrepreneurship?",o:["Infrastructural problems","Political instability","Abundant cheap financing","Foreign competition"],a:2,e:"Abundant cheap financing would be a benefit, not a constraint. The others are real challenges."},
+
+// === FACTORS DETERMINING GROWTH ===
+{t:"Growth Factors",q:"Which factor favors entrepreneurship growth?",o:["Lack of infrastructure","Developed infrastructure facilities","High corruption","No financial assistance"],a:1,e:"Good infrastructure reduces costs and improves project viability through higher margins."},
+{t:"Growth Factors",q:"Protective and promotional government policies help entrepreneurship by:",o:["Increasing competition immediately","Sheltering small businesses from market vulnerabilities","Eliminating all businesses","Raising taxes"],a:1,e:"Small ventures are vulnerable early on — favorable policies protect them during this critical period."},
+{t:"Growth Factors",q:"The 'hunger for success' factor suggests that:",o:["Content people become entrepreneurs","Dreams of riches and ambition drive most entrepreneurs","Entrepreneurs prefer job security","Only wealthy people start businesses"],a:1,e:"Fire in the belly — the capitalistic drive for success — pushes entrepreneurs despite risks."},
+{t:"Growth Factors",q:"Environment/culture impact on entrepreneurship means:",o:["Culture is irrelevant to business","Entrepreneurship can be contagious within communities","Only education matters","Geography determines everything"],a:1,e:"Communities like the Igbos are historically entrepreneurial — culture propels business initiative."},
+{t:"Growth Factors",q:"Globalization affects entrepreneurship by:",o:["Closing all markets","Providing new avenues for business","Making business impossible","Only affecting large corporations"],a:1,e:"Globalization opens new markets and opportunities for daring entrepreneurs."},
+
+// === INNOVATION ===
+{t:"Innovation",q:"Innovation is best defined as:",o:["Pure invention","Gainful modification to a product or process","Copying competitors","Government regulation"],a:1,e:"Innovation = adding value through modification — features, design, cost reduction, or new methods."},
+{t:"Innovation",q:"The formula for innovation is:",o:["Innovation = Idea + Money","Innovation = Invention + Exploitation","Innovation = Research + Development","Innovation = Copying + Marketing"],a:1,e:"Innovation = Invention + Exploitation — turning new ideas into practical, commercially viable solutions."},
+{t:"Innovation",q:"Innovation helps entrepreneurs by:",o:["Eliminating all competition","Gaining competitive advantage through cost or product differentiation","Guaranteeing success","Avoiding market changes"],a:1,e:"Innovation gives competitive advantage through either cost leadership or product differentiation."},
+{t:"Innovation",q:"Which is NOT a reason entrepreneurs need innovation?",o:["To face competition","To stand out in the clutter","To survive recession","To avoid all change"],a:3,e:"Innovation is needed to compete, differentiate, survive downturns, and solve problems — not to avoid change."},
+{t:"Innovation",q:"Product innovation involves:",o:["Only changing prices","Developing new products or significantly improving existing ones","Changing the company name","Hiring new staff"],a:1,e:"Product innovation ranges from entirely new products to incremental improvements in existing ones."},
+{t:"Innovation",q:"Process innovation focuses on:",o:["New products","Improving methods and systems of production or delivery","Marketing only","Hiring practices"],a:1,e:"Process innovation improves how products are made or delivered — new techniques, automation, efficiency."},
+{t:"Innovation",q:"Business model innovation involves:",o:["Keeping everything the same","Rethinking how an organization creates, delivers, and captures value","Only changing the logo","Reducing staff"],a:1,e:"Example: Netflix shifted from DVD rental to streaming, transforming its entire value creation model."},
+{t:"Innovation",q:"Social innovation addresses:",o:["Only profit generation","Societal challenges by creating solutions that improve well-being","Military needs","Government bureaucracy"],a:1,e:"Social innovation creates solutions for education, healthcare, environmental issues — e.g., microfinance."},
+{t:"Innovation",q:"Organizational innovation involves:",o:["Only financial changes","Changes in how organizations are structured or managed","Product design only","Marketing only"],a:1,e:"New organizational practices, leadership styles, and communication tools can boost productivity."},
+{t:"Innovation",q:"The first stage of the innovation process is:",o:["Implementation","Prototyping","Idea generation","Scaling"],a:2,e:"Ideas are conceived first from market research, consumer feedback, or brainstorming sessions."},
+{t:"Innovation",q:"The innovation process stage after concept development is:",o:["Idea generation","Prototyping and testing","Continuous improvement","Marketing"],a:1,e:"After refining the idea into a concept, it's transformed into a prototype for testing."},
+{t:"Innovation",q:"Continuous improvement in innovation means:",o:["Stopping after launch","Ongoing refinement even after implementation","Never changing","Only initial research"],a:1,e:"Innovations require ongoing iteration to remain relevant and effective over time."},
+{t:"Innovation",q:"Sources of innovation include all EXCEPT:",o:["Unexpected occurrences","Process needs","Industry and market changes","Avoiding all market research"],a:3,e:"Sources include unexpected events, process needs, incongruities, and market changes."},
+{t:"Innovation",q:"Areas of innovation include:",o:["Only product design","New services, production techniques, delivery methods, and operating practices","Only advertising","Only pricing"],a:1,e:"Innovation spans services, production, delivery, operations, customer communication, and relationships."},
+
+// === BUSINESS OPPORTUNITY ===
+{t:"Business Opportunity",q:"A business opportunity is defined as:",o:["Any random idea","An attractive idea providing possibility of return for the investor","A government contract","A guaranteed profit scheme"],a:1,e:"A business opportunity is an attractive proposition that could generate returns for the risk-taker."},
+{t:"Business Opportunity",q:"A good idea is NOT necessarily a good business opportunity because:",o:["All ideas make money","The market may not be ready, competition may be too strong, or ROI may be poor","Ideas always succeed","There's no difference"],a:1,e:"Even brilliant products can fail if the market isn't ready, competition is fierce, or returns are inadequate."},
+{t:"Business Opportunity",q:"What turns an idea into a business opportunity?",o:["Government approval","When income exceeds costs (profit)","Just having enthusiasm","Social media popularity"],a:1,e:"Simply put: when revenue exceeds costs and produces profit, an idea becomes a viable opportunity."},
+{t:"Business Opportunity",q:"A characteristic of a good business opportunity is:",o:["No demand needed","Real demand from customers willing and able to purchase","Only theoretical appeal","No competition"],a:1,e:"There must be real demand — customers with needs, willingness, and purchasing power."},
+{t:"Business Opportunity",q:"'Window of opportunity' refers to:",o:["A shop display","The limited time during which an opportunity can be seized","A computer feature","A type of loan"],a:1,e:"Opportunities don't last forever — you must act while the window is open."},
+{t:"Business Opportunity",q:"Approximately what percentage of new products fail?",o:["20%","50%","Over 80%","Less than 10%"],a:2,e:"Over 80% of new products fail — showing that good ideas don't always survive market testing."},
+
+// === MARKETING ===
+{t:"Marketing & Management",q:"The marketing concept directs business owners to:",o:["Maximize production at all costs","Identify, satisfy, and follow up customer needs at a profit","Ignore customer preferences","Focus only on pricing"],a:1,e:"Modern marketing centers on identifying and satisfying customer needs profitably."},
+{t:"Marketing & Management",q:"Marketing strategy includes:",o:["Selling to everyone equally","Identifying target markets and tailoring the marketing mix","Ignoring competition","Only advertising"],a:1,e:"Strategy means identifying specific customer groups and customizing product, price, place, and promotion."},
+{t:"Marketing & Management",q:"The four elements of the marketing mix are:",o:["Plan, Produce, Profit, Pay","Product, Promotion, Place, Price","People, Process, Profit, Plan","Position, Power, Profit, Production"],a:1,e:"The 4Ps: Product, Promotion, Place (distribution), and Price — the core marketing toolkit."},
+{t:"Marketing & Management",q:"Target marketing means:",o:["Marketing to everyone","Concentrating efforts on one or two key market segments","Avoiding all marketing","Only online marketing"],a:1,e:"Small businesses with limited resources should focus their marketing on the most promising segments."},
+{t:"Marketing & Management",q:"Geographical segmentation means:",o:["Selling globally","Serving customers in a particular geographical area","Ignoring location","Only online sales"],a:0,e:"Geographical segmentation targets customers in a specific area — e.g., a local shop advertising nearby."},
+{t:"Marketing & Management",q:"Customer segmentation involves:",o:["Treating all customers the same","Identifying groups most likely to buy before trying to attract new ones","Random marketing","Only selling to friends"],a:1,e:"Customer segmentation focuses on identifying and prioritizing the most promising buyer groups."},
+{t:"Marketing & Management",q:"Entrepreneurs should know all of the following about customers EXCEPT:",o:["What customers want","Where customers buy","When customers buy","Customers' private passwords"],a:3,e:"Know the customer: what they want, where/when/how they buy — but private data is irrelevant."},
+{t:"Marketing & Management",q:"Higher prices for small businesses can be justified by:",o:["Nothing","The personalized service they offer","Lower quality","Less selection"],a:1,e:"Small businesses can charge more because of the personal, customized service they provide."},
+
+// === BUSINESS ENVIRONMENT ===
+{t:"Business Environment",q:"The business environment includes all factors EXCEPT:",o:["Political factors","Economic factors","Entrepreneur's personal hobbies","Technological factors"],a:2,e:"The business environment consists of political, economic, socio-cultural, technological, and legal factors."},
+{t:"Business Environment",q:"The political environment affects entrepreneurship by:",o:["Having no effect","Providing stability, policies, and infrastructure that support business","Only creating barriers","Making all businesses equal"],a:1,e:"A stable political climate with supportive policies and infrastructure enables entrepreneurship."},
+{t:"Business Environment",q:"The technological environment impacts business by:",o:["Having no effect on small businesses","Changing costs, quality requirements, and competitive advantages","Only affecting large corporations","Making all products identical"],a:1,e:"Technology changes industry structures and can create or destroy competitive advantages."},
+{t:"Business Environment",q:"The socio-cultural environment includes:",o:["Only government regulations","Customs, norms, traditions, values, ethics, and attitudes about work","Only economic indicators","Only technology trends"],a:1,e:"Culture, community norms, and social attitudes can either promote or hinder enterprise."},
+{t:"Business Environment",q:"The legal environment affects entrepreneurship through:",o:["Having no impact","Business registration procedures, labour laws, patents, and tariffs","Only criminal law","Only international law"],a:1,e:"Complex regulations can hinder venture creation; simpler legal procedures facilitate it."},
+{t:"Business Environment",q:"BOI and SMEDAN are examples of:",o:["Private companies","Government institutions supporting small-scale enterprises","International NGOs","Banks only"],a:1,e:"BOI (Bank of Industry) and SMEDAN support entrepreneurship with finance, technology, and marketing help."},
+{t:"Business Environment",q:"PESTLE analysis examines:",o:["Only profits","Political, Economic, Socio-cultural, Technological, Legal, and Environmental factors","Only competition","Only internal factors"],a:1,e:"PESTLE is a framework for analyzing the external macro-environment affecting business."},
+
+// === BUSINESS PLAN ===
+{t:"Business Plan",q:"A business plan is:",o:["An informal conversation","A written document serving as a road map from start-up to implementation","A government requirement only","An advertising brochure"],a:1,e:"The business plan describes all elements of starting a new venture — a blueprint of entrepreneurial intentions."},
+{t:"Business Plan",q:"The difference between a feasibility report and a business plan is:",o:["They are identical","The business plan is more action-oriented","The feasibility report is more detailed","There is no difference"],a:1,e:"A feasibility study assesses viability; a business plan is the action-oriented blueprint for execution."},
+{t:"Business Plan",q:"A business plan is important because:",o:["It's only for banks","It helps the entrepreneur determine viability, set goals, and obtain finance","It's a legal requirement","It replaces management"],a:1,e:"It guides direction, assesses viability, helps set targets, and is essential for securing financing."},
+{t:"Business Plan",q:"The executive summary of a business plan is:",o:["The longest section","A 3-4 page summary of the complete plan","Only financial data","The appendix"],a:1,e:"The executive summary is a concise overview of the entire business plan — usually the first thing investors read."},
+{t:"Business Plan",q:"Which is NOT a component of a business plan?",o:["Marketing plan","Financial plan","Personal diary entries","Industry analysis"],a:2,e:"Components include introductory page, executive summary, industry analysis, marketing, financial, and organizational plans."},
+{t:"Business Plan",q:"The financial plan section includes:",o:["Only the business name","Pro forma income statement, cash flow projections, and break-even analysis","Only employee names","Only the product description"],a:1,e:"Financial planning covers income projections, cash flow, balance sheets, break-even analysis, and funding sources."},
+{t:"Business Plan",q:"Who prepares a business plan?",o:["Only accountants","Managers, owners, and it's also used by lenders","Only government officials","Only lawyers"],a:1,e:"Managers clarify ideas, owners assess viability, and lenders evaluate risk and management quality."},
+{t:"Business Plan",q:"When making a business plan, you should:",o:["Ignore the competition","Be realistic and have a contingency reserve","Guarantee 100% success","Keep it secret from your team"],a:1,e:"Realistic forecasting with contingency reserves is essential — unseen expenses always arise."},
+
+// === SMALL SCALE ENTERPRISE ===
+{t:"Small Scale Enterprise",q:"A small business in Nigeria is characterized by:",o:["Over 1000 employees","Less than 30 employees and limited capital","Government ownership","Multinational operations"],a:1,e:"In Nigeria, small businesses typically have 8-30 employees with capital from ₦100,000 to ₦100 million."},
+{t:"Small Scale Enterprise",q:"Small businesses are generally:",o:["Capital intensive","Labour intensive","Technology intensive","Government funded"],a:1,e:"Small businesses rely more on human labour than expensive machinery and technology."},
+{t:"Small Scale Enterprise",q:"'Personalized management' in small businesses means:",o:["Hiring a CEO","The owner actively participates in all management aspects","Hands-off management","Only financial management"],a:1,e:"In small businesses, the owner is directly involved in all aspects and major decisions."},
+{t:"Small Scale Enterprise",q:"Small businesses contribute to the economy by:",o:["Only serving local markets","Creating employment, reducing regional imbalances, and promoting exports","Only making profits","Only competing with large firms"],a:1,e:"They create jobs, reduce inequality, serve as ancillaries, promote exports, and supply raw materials."},
+{t:"Small Scale Enterprise",q:"A failure factor for small businesses is:",o:["Good financial control","Management incompetence","Strong marketing","Adequate capital"],a:1,e:"Incompetent management — lacking skills in finance, inventory, and planning — causes many failures."},
+{t:"Small Scale Enterprise",q:"To avoid small business failure, entrepreneurs should:",o:["Ignore financial statements","Know the business in depth and prepare a business plan","Avoid all professional development","Ignore customers"],a:1,e:"Deep knowledge, business planning, financial management, and customer sensitivity prevent failure."},
+{t:"Small Scale Enterprise",q:"Independence in small business means:",o:["Never seeking advice","The owner has control over the business","The business is publicly traded","Government controls operations"],a:1,e:"Independence means the owner maintains control — a defining characteristic of small enterprises."},
+
+// === COMPETITION ===
+{t:"Competition Analysis",q:"Step 1 of analyzing competition is to:",o:["Ignore competitors","Identify direct and indirect competitors by name and type","Copy all competitors","Lower all prices"],a:1,e:"List direct competitors (same products) and indirect ones (substitutes) — know who you're up against."},
+{t:"Competition Analysis",q:"Direct competitors are those who:",o:["Sell completely different products","Provide the same products or services as your business","Are located in other countries","Are government agencies"],a:1,e:"Direct competitors offer the same products/services to the same target market."},
+{t:"Competition Analysis",q:"Indirect competitors provide:",o:["The exact same products","Products or services that can substitute for yours","No competition","Government services"],a:1,e:"Indirect competitors offer alternatives — different products that satisfy the same customer need."},
+{t:"Competition Analysis",q:"Entrepreneurs should evaluate marketing performance:",o:["Never","At least quarterly","Only once at startup","Only when problems arise"],a:1,e:"Regular evaluation — at least quarterly — against established standards keeps performance on track."},
+
+// === ENTREPRENEURIAL THEORIES (from docx lecture plan) ===
+{t:"Entrepreneurial Theories",q:"Schumpeter's theory of entrepreneurship emphasizes:",o:["Risk avoidance","Creative destruction and innovation as drivers of economic development","Government planning","Labour management"],a:1,e:"Schumpeter saw entrepreneurs as innovators whose creative destruction drives economic progress."},
+{t:"Entrepreneurial Theories",q:"According to Schumpeter, the entrepreneur's primary role is:",o:["Copying existing products","Introducing innovations that disrupt existing markets","Managing employees","Reducing taxes"],a:1,e:"Schumpeter emphasized innovation — new products, methods, markets, and organizational forms."},
+{t:"Entrepreneurial Theories",q:"The risk-bearing theory of entrepreneurship focuses on:",o:["Innovation","The entrepreneur's role in bearing uncertainty and risk","Government support","Marketing only"],a:1,e:"This theory highlights that entrepreneurs earn profit as a reward for bearing uncertainty in business."},
+{t:"Entrepreneurial Theories",q:"McClelland's theory suggests that entrepreneurship is driven by:",o:["Fear of failure","A high need for achievement (nAch)","Government incentives","Social pressure"],a:1,e:"McClelland argued people with a high need for achievement are more likely to become entrepreneurs."},
+{t:"Entrepreneurial Theories",q:"The sociological theory of entrepreneurship emphasizes:",o:["Individual psychology","Social and cultural factors influencing entrepreneurial behavior","Only financial factors","Only technology"],a:1,e:"This theory focuses on how social networks, culture, and community norms shape entrepreneurship."},
+
+// === TECHNOPRENEUR & INTRAPRENEUR ===
+{t:"Technopreneur & Intrapreneur",q:"A technopreneur is:",o:["A traditional farmer","An entrepreneur who leverages technology to create innovative businesses","A government IT officer","A university professor"],a:1,e:"Technopreneurs combine technological expertise with entrepreneurial skills to build tech-based ventures."},
+{t:"Technopreneur & Intrapreneur",q:"An intrapreneur is:",o:["An independent business owner","An employee who acts entrepreneurially within an existing organization","A government official","An external consultant"],a:1,e:"Intrapreneurs bring entrepreneurial thinking — innovation, risk-taking — to their roles within companies."},
+{t:"Technopreneur & Intrapreneur",q:"The key difference between entrepreneur and intrapreneur is:",o:["They are exactly the same","Entrepreneurs own their ventures; intrapreneurs innovate within existing organizations","Intrapreneurs take more risk","Entrepreneurs work for others"],a:1,e:"Entrepreneurs bear personal risk in their own ventures; intrapreneurs innovate using company resources."},
+{t:"Technopreneur & Intrapreneur",q:"Technological competence in entrepreneurship refers to:",o:["Avoiding all technology","The ability to understand, adopt, and leverage technology for business advantage","Only using computers","Only social media"],a:1,e:"Tech-competent entrepreneurs use technology strategically to improve products, processes, and competitiveness."},
+
+// === CREATIVITY ===
+{t:"Creativity & Innovation",q:"Creativity in entrepreneurship is:",o:["Copying others exactly","The ability to generate new and useful ideas","Only artistic talent","Government policy"],a:1,e:"Creativity is the foundation of innovation — generating original ideas that can create value."},
+{t:"Creativity & Innovation",q:"The relationship between creativity and innovation is:",o:["They are unrelated","Creativity generates ideas; innovation implements them commercially","Creativity comes after innovation","They are the same thing"],a:1,e:"Creativity = ideation; Innovation = implementation. You need both for business success."},
+{t:"Creativity & Innovation",q:"Brainstorming is a technique for:",o:["Financial analysis","Generating creative ideas in a group setting","Legal compliance","Employee termination"],a:1,e:"Brainstorming encourages free idea generation without immediate judgment — quantity over quality initially."},
+{t:"Creativity & Innovation",q:"Installing an attitude for innovation includes:",o:["Discouraging all conflict","Encouraging creative conflict and learning from failure","Only following rules","Avoiding prototyping"],a:1,e:"Innovation thrives on creative tension, small teams, understanding users, and accepting that failure teaches."},
+
+// === MORE MIXED QUESTIONS ===
+{t:"Definitions & Concepts",q:"Entrepreneurship can be defined as the willingness and ability to:",o:["Avoid all investment","Search for investment opportunities, establish and run a business successfully","Only save money","Work for government"],a:1,e:"Entrepreneurship combines the willingness and ability to find opportunities and build successful businesses."},
+{t:"Definitions & Concepts",q:"An entrepreneur creates jobs, solves problems, and:",o:["Avoids all risk","Adds value and seeks excellence","Only makes personal profit","Works alone always"],a:1,e:"Entrepreneurs are creative thinkers who invest, take risks, create jobs, solve problems, and add value."},
+{t:"Innovation",q:"Value Analysis/Value Engineering achieves:",o:["Higher costs","Innovation through examining product features for cost-effective improvements","Nothing useful","Only aesthetic changes"],a:1,e:"Value analysis systematically examines products/processes to improve value — the core of innovation."},
+{t:"Business Opportunity",q:"Factors in assessing business opportunities include all EXCEPT:",o:["Industry and market","Personal goals and competencies","Guaranteed government success","Competition and resource requirements"],a:2,e:"Assessment involves market analysis, personal fit, team quality, competition, and resource requirements."},
+{t:"Marketing & Management",q:"A profitable sales volume is better than:",o:["No sales","Maximum sales volume (without profit focus)","Any marketing","All competition eliminated"],a:1,e:"Marketing is based on the idea that profitable sales are better than maximum volume at any cost."},
+{t:"Small Scale Enterprise",q:"Improper attitude as a failure factor includes:",o:["Good time management","Not respecting time, lazy lifestyle, and dictatorial management style","Strong leadership","Customer focus"],a:1,e:"Poor attitudes — laziness, disrespect for time, dictatorial behavior — are recipes for business failure."},
+{t:"Growth Factors",q:"Economic growth rate of a country affects entrepreneurship by:",o:["Having no impact","Creating more demand and improving success prospects","Only affecting agriculture","Reducing opportunities"],a:1,e:"A growing economy creates more demand, which means more opportunities for entrepreneurs."},
+{t:"Business Plan",q:"The organizational plan section of a business plan includes:",o:["Only financial data","Form of ownership, partners, management team, roles and responsibilities","Only the product description","Only the marketing strategy"],a:1,e:"It covers ownership structure, who's involved, their backgrounds, authority, and responsibilities."},
+{t:"Constraints of Entrepreneurship",q:"Government rules and regulations can challenge entrepreneurs through:",o:["Simplified processes","Complex registration, permits, taxes, tariffs, and licenses","No requirements at all","Automatic business approval"],a:1,e:"Bureaucratic registration, permits, taxes, and compliance requirements create barriers for entrepreneurs."},
+{t:"Innovation",q:"Incremental innovation refers to:",o:["Revolutionary, completely new products","Small, gradual improvements to existing products or processes","Copying competitors","No change at all"],a:1,e:"Incremental innovation involves small improvements — like better battery life or a more efficient processor."},
+{t:"Innovation",q:"Disruptive innovation refers to:",o:["Minor product updates","Innovations that create new markets and eventually displace established ones","Government regulation","Cost cutting only"],a:1,e:"Disruptive innovations start small but eventually overthrow existing market leaders — like smartphones replacing cameras."},
+{t:"Business Environment",q:"SMEDAN stands for:",o:["Small and Medium Enterprise Development Agency of Nigeria","Social and Marketing Enterprise Department","Small Money Enterprise Division","State Management and Enterprise Department"],a:0,e:"SMEDAN supports the growth of micro, small, and medium enterprises in Nigeria."},
+{t:"Entrepreneurial Traits",q:"'Willing to Listen' means successful entrepreneurs:",o:["Never use outside resources","Ask for help from bankers, accountants, and advisers when needed","Ignore all advice","Only trust themselves"],a:1,e:"Self-reliance doesn't mean isolation — listening to expert advice is a key entrepreneurial characteristic."},
+{t:"Becoming an Entrepreneur",q:"Time management for entrepreneurs means:",o:["Working only when convenient","Judicious use of time to accomplish many tasks in the shortest time","Ignoring deadlines","Working without breaks"],a:1,e:"Effective time management helps entrepreneurs accomplish the many complex tasks of business."},
+{t:"Becoming an Entrepreneur",q:"Freedom and independence for entrepreneurs means:",o:["Total reliance on others","Ability to think widely, come up with new ideas, and solve problems independently","Never collaborating","Working in isolation"],a:1,e:"Freedom enables creative thinking; independence allows entrepreneurs to control situations and solve problems."},
+{t:"Business Plan",q:"Assessment of risk in a business plan evaluates:",o:["Only strengths","Weaknesses, new technologies, and contingency plans","Only profits","Only market size"],a:1,e:"Risk assessment identifies potential weaknesses, technological threats, and prepares backup plans."},
+{t:"Marketing & Management",q:"Place/distribution for small businesses considers:",o:["Only online sales","Cost and traffic flow as major factors in location selection","Only luxury locations","Government-assigned locations"],a:1,e:"Location decisions balance cost against customer traffic — low-cost locations may need more advertising."},
+{t:"Small Scale Enterprise",q:"'Closely held' as a characteristic of small business means:",o:["Publicly traded","Ownership is concentrated among few individuals, often a family","Government owned","Owned by many shareholders"],a:1,e:"Small businesses are typically owned and controlled by one person or a small group, often family."},
+{t:"Competition Analysis",q:"When comparing your business against competition, you should:",o:["Ignore all competitors","Explain advantages in price, performance, quality, and why your methods will succeed","Copy everything competitors do","Never analyze the market"],a:1,e:"You must articulate clear advantages and explain why your approach will outperform competitors."},
+{t:"Innovation",q:"Open innovation means:",o:["Keeping all ideas secret","Using both internal and external ideas and paths to advance technology","Only internal R&D","Government-directed innovation"],a:1,e:"Open innovation leverages ideas from both inside and outside the organization."},
+{t:"Definitions & Concepts",q:"The four aspects of the new definition of entrepreneurship are:",o:["Marketing, Sales, HR, Finance","Creation process, Time/effort, Risk assumption, Rewards","Planning, Organizing, Leading, Controlling","Buying, Selling, Trading, Investing"],a:1,e:"Creation, time devotion, risk-taking, and rewards (money, satisfaction, independence)."},
+{t:"Business Environment",q:"The economic environment in Nigeria is shaped by:",o:["Only agriculture","GDP growth, liberalization, globalization, and economic reforms","Only oil prices","Only government spending"],a:1,e:"Economic policies, GDP growth, liberalization, and reforms all shape the entrepreneurial landscape."},
+{t:"Innovation",q:"Netflix is an example of which type of innovation?",o:["Product innovation","Process innovation","Business model innovation","Social innovation"],a:2,e:"Netflix transformed from DVD rental to streaming — fundamentally changing how it creates and delivers value."},
+{t:"Innovation",q:"Microfinance programs like Grameen Bank represent:",o:["Product innovation","Business model innovation","Social innovation","Process innovation"],a:2,e:"Grameen Bank innovatively addressed financial inclusion for low-income people — a social innovation."},
+];
+
+// === STATE ===
+const STORAGE_KEY='gst201_quiz_v1';
+let questions=[],qi=0,correct=0,answered=0,skipped=0,streak=0,bestStreak=0;
+let weakTopics={},bookmarks=new Set(),timerInterval,seconds=0;
+let sessionSize=0,selectedTopics=[],mode='fresh';
+let answers={}; // qi -> {picked, shuffleMap, correct}
+const allTopics=[...new Set(Q.map(q=>q.t))];
+
+function shuffle(a){let r=[...a];for(let i=r.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r}
+function fmt(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+(s%60)}
+
+// === SAVE/LOAD ===
+function saveProgress(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    qi,correct,answered,skipped,streak,bestStreak,seconds,
+    weakTopics,bookmarks:[...bookmarks],answers,
+    qIndices:questions.map(q=>Q.indexOf(q)),
+    sessionSize,mode,selectedTopics
+  }))}catch(e){}
+}
+function loadProgress(){
+  try{let d=JSON.parse(localStorage.getItem(STORAGE_KEY));if(d&&d.qIndices)return d}catch(e){}return null;
+}
+function clearProgress(){try{localStorage.removeItem(STORAGE_KEY)}catch(e){}}
+
+// === SETUP ===
+function showSetup(){
+  document.getElementById('quizHeader').classList.add('hidden');
+  document.getElementById('quizArea').classList.add('hidden');
+  document.getElementById('resultsArea').classList.add('hidden');
+  clearInterval(timerInterval);
+  let tc={};Q.forEach(q=>tc[q.t]=(tc[q.t]||0)+1);
+  let saved=loadProgress();
+  let resumeHtml='';
+  if(saved&&saved.qi<saved.qIndices.length){
+    let pct=saved.answered?Math.round(saved.correct/saved.answered*100):0;
+    resumeHtml=`<div class="resume-banner"><p>You have a session in progress: Q${saved.qi+1}/${saved.qIndices.length} · ${pct}% · ${fmt(saved.seconds)}</p>
+    <button class="nav-btn primary" onclick="resumeSession()" style="display:inline-block;width:auto;padding:10px 24px">Resume</button>
+    <button class="nav-btn secondary" onclick="clearProgress();showSetup()" style="display:inline-block;width:auto;padding:10px 24px">Discard</button></div>`;
+  }
+  document.getElementById('setupArea').innerHTML=`${resumeHtml}<div class="setup">
+  <h2>Configure Your Session</h2>
+  <div class="setup-section"><label>Mode</label>
+  <div class="mode-pills">
+    <div class="pill active" onclick="pickMode(this,'fresh')">Fresh Start</div>
+    <div class="pill" onclick="pickMode(this,'weak')">Weak Areas</div>
+    <div class="pill" onclick="pickMode(this,'bookmarks')">Bookmarked (${bookmarks.size})</div>
+  </div></div>
+  <div class="setup-section" id="topicSection"><label>Topics <span style="color:var(--text);text-transform:none;font-family:DM Sans;font-weight:400">(tap to filter)</span></label>
+  <div class="topic-chips">${allTopics.map(t=>`<div class="chip active" onclick="toggleChip(this)">${t} <span style="opacity:.5">(${tc[t]})</span></div>`).join('')}</div></div>
+  <div class="setup-section"><label>Questions per session</label>
+  <div class="size-options">
+    <div class="size-btn" onclick="pickSize(this,10)">10</div>
+    <div class="size-btn" onclick="pickSize(this,20)">20</div>
+    <div class="size-btn" onclick="pickSize(this,30)">30</div>
+    <div class="size-btn" onclick="pickSize(this,50)">50</div>
+    <div class="size-btn active" onclick="pickSize(this,0)">All</div>
+  </div></div>
+  <div class="q-total" id="qTotal">${Q.length} questions available</div>
+  <button class="start-btn" onclick="startQuiz()">Start Quiz →</button>
+  </div>`;
+  document.getElementById('setupArea').classList.remove('hidden');
+  sessionSize=0;mode='fresh';selectedTopics=[...allTopics];
+}
+
+function pickMode(el,m){el.parentElement.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));el.classList.add('active');mode=m;document.getElementById('topicSection').style.display=m==='bookmarks'?'none':'';updTotal()}
+function toggleChip(el){el.classList.toggle('active');updTotal()}
+function pickSize(el,n){el.parentElement.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');sessionSize=n;updTotal()}
+function updTotal(){
+  selectedTopics=[];document.querySelectorAll('.chip.active').forEach(c=>selectedTopics.push(c.textContent.replace(/\s*\(\d+\)/,'')));
+  let pool;
+  if(mode==='bookmarks')pool=bookmarks.size;
+  else if(mode==='weak'){let w=Object.keys(weakTopics);pool=w.length?Q.filter(q=>w.includes(q.t)).length:Q.length;}
+  else pool=Q.filter(q=>selectedTopics.includes(q.t)).length;
+  let n=sessionSize?Math.min(sessionSize,pool):pool;
+  let el=document.getElementById('qTotal');if(el)el.textContent=n+' questions in this session';
+}
+
+// === RESUME ===
+function resumeSession(){
+  let d=loadProgress();if(!d)return showSetup();
+  questions=d.qIndices.map(i=>Q[i]);
+  qi=d.qi;correct=d.correct;answered=d.answered;skipped=d.skipped;
+  streak=d.streak;bestStreak=d.bestStreak;seconds=d.seconds;
+  weakTopics=d.weakTopics||{};bookmarks=new Set(d.bookmarks||[]);
+  answers=d.answers||{};sessionSize=d.sessionSize;mode=d.mode;selectedTopics=d.selectedTopics;
+  document.getElementById('setupArea').classList.add('hidden');
+  document.getElementById('quizHeader').classList.remove('hidden');
+  document.getElementById('quizArea').classList.remove('hidden');
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{seconds++;document.getElementById('timerNum').textContent=fmt(seconds)},1000);
+  document.getElementById('timerNum').textContent=fmt(seconds);
+  updateStats();showQuestion();
+}
+
+// === QUIZ ===
+function startQuiz(){
+  document.getElementById('setupArea').classList.add('hidden');
+  document.getElementById('quizHeader').classList.remove('hidden');
+  document.getElementById('quizArea').classList.remove('hidden');
+  document.getElementById('resultsArea').classList.add('hidden');
+  qi=0;correct=0;answered=0;skipped=0;streak=0;bestStreak=0;seconds=0;answers={};
+  let pool;
+  if(mode==='bookmarks')pool=Q.filter((_,i)=>bookmarks.has(i));
+  else if(mode==='weak'){let w=Object.keys(weakTopics);pool=w.length?Q.filter(q=>w.includes(q.t)):shuffle(Q);}
+  else pool=Q.filter(q=>selectedTopics.includes(q.t));
+  questions=shuffle(pool);
+  if(sessionSize&&sessionSize<questions.length)questions=questions.slice(0,sessionSize);
+  clearInterval(timerInterval);
+  timerInterval=setInterval(()=>{seconds++;document.getElementById('timerNum').textContent=fmt(seconds)},1000);
+  document.getElementById('timerNum').textContent='0:00';
+  updateStats();showQuestion();saveProgress();
+}
+
+function updateStats(){
+  let t=answered+skipped,pct=answered?Math.round(correct/answered*100):0;
+  document.getElementById('scoreNum').textContent=pct+'%';
+  document.getElementById('streakNum').textContent=streak;
+  document.getElementById('doneNum').textContent=answered+'/'+questions.length;
+  document.getElementById('progFill').style.width=(t/questions.length*100)+'%';
+}
+
+function showQuestion(){
+  if(qi>=questions.length){showResults();return}
+  let q=questions[qi],gi=Q.indexOf(q),bm=bookmarks.has(gi);
+  let prev=answers[qi];
+  // If already answered, show the locked state
+  if(prev){
+    let so=prev.shuffleMap.map(i=>q.o[i]);
+    let csA=prev.shuffleMap.indexOf(q.a);
+    let html=`<div class="q-counter"><span>Q ${qi+1} / ${questions.length}</span><span class="actions"><button onclick="togBM(${gi})" id="bmBtn" class="${bm?'bookmarked':''}" title="Bookmark">★</button></span></div>
+    <div class="question-card"><span class="topic-tag">${q.t}</span><h2>${q.q}</h2></div><div class="options">`;
+    so.forEach((o,i)=>{
+      let cls='opt-btn disabled';
+      if(i===prev.picked&&prev.picked===csA)cls+=' selected-correct';
+      else if(i===prev.picked)cls+=' selected-wrong';
+      if(i===csA&&prev.picked!==csA)cls+=' show-correct';
+      html+=`<button class="${cls}"><span class="key">${'ABCD'[i]}</span><span>${o}</span></button>`;
+    });
+    html+=`</div><div class="explanation"><strong>${prev.picked===csA?'Correct!':'Not quite.'}</strong> ${q.e}</div>`;
+    html+=navButtons();
+    document.getElementById('quizArea').innerHTML=html;
+    return;
+  }
+  // Fresh question
+  let ix=[0,1,2,3];for(let i=3;i>0;i--){let j=Math.floor(Math.random()*(i+1));[ix[i],ix[j]]=[ix[j],ix[i]]}
+  let so=ix.map(i=>q.o[i]);
+  window._curShuffle=ix;
+  document.getElementById('quizArea').innerHTML=`<div class="q-counter"><span>Q ${qi+1} / ${questions.length}</span><span class="actions"><button onclick="togBM(${gi})" id="bmBtn" class="${bm?'bookmarked':''}" title="Bookmark">★</button></span></div>
+  <div class="question-card"><span class="topic-tag">${q.t}</span><h2>${q.q}</h2></div>
+  <div class="options">${so.map((o,i)=>`<button class="opt-btn" onclick="pick(${i})" id="opt${i}"><span class="key">${'ABCD'[i]}</span><span>${o}</span></button>`).join('')}</div>
+  <div id="fb"></div>
+  <button class="skip-btn" id="skipBtn" onclick="doSkip()">Skip →</button>
+  ${qi>0?`<button class="skip-btn" onclick="goBack()">← Previous</button>`:''}`;
+}
+
+function navButtons(){
+  let btns='<div class="nav-row">';
+  if(qi>0)btns+=`<button class="nav-btn secondary" onclick="goBack()">← Back</button>`;
+  if(qi<questions.length-1)btns+=`<button class="nav-btn primary" onclick="qi++;showQuestion()">Next →</button>`;
+  else btns+=`<button class="nav-btn primary" onclick="qi++;showQuestion()">See Results →</button>`;
+  return btns+'</div>';
+}
+
+function goBack(){if(qi>0){qi--;showQuestion()}}
+function togBM(i){if(bookmarks.has(i))bookmarks.delete(i);else bookmarks.add(i);let b=document.getElementById('bmBtn');if(b)b.classList.toggle('bookmarked');saveProgress()}
+function doSkip(){skipped++;qi++;updateStats();showQuestion();saveProgress()}
+
+function pick(i){
+  let q=questions[qi],ix=window._curShuffle,csA=ix.indexOf(q.a);
+  let btns=document.querySelectorAll('.opt-btn');
+  btns.forEach(b=>{b.classList.add('disabled');b.onclick=null});
+  let sb=document.getElementById('skipBtn');if(sb)sb.classList.add('hidden');
+  answered++;let ok=i===csA;
+  if(ok){correct++;streak++;if(streak>bestStreak)bestStreak=streak;btns[i].classList.add('selected-correct')}
+  else{streak=0;btns[i].classList.add('selected-wrong');btns[csA].classList.add('show-correct');weakTopics[q.t]=(weakTopics[q.t]||0)+1}
+  answers[qi]={picked:i,shuffleMap:ix,correct:ok};
+  updateStats();
+  document.getElementById('fb').innerHTML=`<div class="explanation"><strong>${ok?'Correct!':'Not quite.'}</strong> ${q.e}</div>${navButtons()}`;
+  saveProgress();
+}
+
+// === RESULTS ===
+function showResults(){
+  clearInterval(timerInterval);clearProgress();
+  document.getElementById('quizHeader').classList.add('hidden');
+  document.getElementById('quizArea').classList.add('hidden');
+  document.getElementById('resultsArea').classList.remove('hidden');
+  let pct=answered?Math.round(correct/answered*100):0;
+  let g,gc;if(pct>=70){g='A — Exam Ready';gc='grade-a'}else if(pct>=60){g='B — Almost There';gc='grade-b'}else if(pct>=50){g='C — Needs Work';gc='grade-c'}else{g='F — Keep Practicing';gc='grade-f'}
+  let wl=Object.entries(weakTopics).sort((a,b)=>b[1]-a[1]);
+  let html=`<div class="results"><div class="big">${pct}%</div><div class="grade ${gc}">${g}</div>
+  <p style="margin-top:12px">${correct} correct · ${answered-correct} wrong · ${skipped} skipped · ${fmt(seconds)}</p><p>Best streak: ${bestStreak}</p>`;
+  if(wl.length){html+=`<div class="result-details"><h3>Topics to Review</h3>${wl.slice(0,6).map(([t,w])=>{let c=w>3?'var(--wrong)':w>1?'var(--warn)':'var(--accent)';return `<div class="topic-row"><span>${t}</span><span style="color:${c};font-family:'Space Mono',monospace;font-size:12px">${w} wrong</span></div>`}).join('')}</div>`}
+  html+=`<div class="result-btns"><button class="nav-btn primary" onclick="showSetup()">New Session</button>
+  ${wl.length?`<button class="nav-btn primary" style="background:linear-gradient(135deg,var(--accent2),#ec4899)" onclick="mode='weak';startQuiz()">Practice Weak Areas</button>`:''}
+  ${bookmarks.size?`<button class="nav-btn primary" style="background:linear-gradient(135deg,var(--warn),#f97316)" onclick="mode='bookmarks';startQuiz()">Review Bookmarked (${bookmarks.size})</button>`:''}
+  </div></div>`;
+  document.getElementById('resultsArea').innerHTML=html;
+}
+
+showSetup();
+</script>
+</body>
+</html>
